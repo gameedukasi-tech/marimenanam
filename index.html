@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sawah Ajaib Petani Cilik</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', 'Fredoka One', cursive, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 45%, #7EC850 45%, #499920 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- BACKGROUND AWAN BERGERAK --- */
+        .sky {
+            position: fixed; top: 0; left: 0; width: 100%; height: 45vh; z-index: 1; pointer-events: none;
+        }
+
+        .cloud {
+            position: absolute; background: rgba(255, 255, 255, 0.9); border-radius: 50px;
+            animation: moveClouds linear infinite;
+        }
+
+        .cloud::before, .cloud::after {
+            content: ''; position: absolute; background: rgba(255, 255, 255, 0.9); border-radius: 50%;
+        }
+
+        .c1 { width: 150px; height: 50px; top: 8%; animation-duration: 30s; }
+        .c1::before { width: 60px; height: 60px; top: -30px; left: 30px; }
+        .c1::after { width: 50px; height: 50px; top: -20px; left: 80px; }
+
+        .c2 { width: 220px; height: 70px; top: 25%; animation-duration: 45s; animation-delay: -15s; }
+        .c2::before { width: 90px; height: 90px; top: -40px; left: 40px; }
+        .c2::after { width: 60px; height: 60px; top: -25px; left: 110px; }
+
+        @keyframes moveClouds {
+            from { left: -250px; }
+            to { left: 100vw; }
+        }
+
+        /* --- DASHBOARD ATAS --- */
+        .top-bar {
+            position: fixed; top: 15px; width: 90%; max-width: 900px; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.95); padding: 12px 24px;
+            border-radius: 20px; border: 4px solid #5d4037;
+            box-shadow: 0 6px 0 #3e2723;
+        }
+
+        .stats { display: flex; gap: 20px; font-size: 1.2rem; font-weight: bold; color: #3e2723; }
+
+        /* --- LAHAN SAWAH (10 PETAK) --- */
+        .farm-field {
+            position: relative; z-index: 5;
+            width: 95%; max-width: 1050px;
+            margin: 110px auto 120px auto;
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px; 
+            justify-items: center;
+        }
+
+        .plot-earth {
+            width: 160px; height: 160px;
+            background: radial-gradient(circle, #8d6e63 0%, #5d4037 100%);
+            border: 5px solid #3e2723;
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+            box-shadow: inset 0 8px 15px rgba(0,0,0,0.5), 0 10px 15px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.2s, border-color 0.2s, background 0.2s; color: white;
+            position: relative;
+            overflow: visible; /* Diubah agar hama bisa muncul di luar garis petak */
+        }
+
+        .plot-earth:hover { transform: scale(1.05); border-color: #ffd700; }
+        .plot-earth.drag-over { border-color: #00e676; transform: scale(1.08); background: radial-gradient(circle, #29b6f6 0%, #0288d1 100%); }
+        .plot-earth.locked { background: radial-gradient(circle, #616161 0%, #37474F 100%); border-color: #212121; }
+
+        .plant-sprite { 
+            font-size: 3.8rem; 
+            filter: drop-shadow(0 6px 6px rgba(0,0,0,0.4));
+            transition: transform 0.3s ease;
+        }
+        .stage-0 { transform: scale(0.6); } /* Biji */
+        .stage-1 { transform: scale(0.85); } /* Tunas / Daun */
+        .stage-2 { transform: scale(1.1); }  /* Pohon Besar */
+        .stage-3 { transform: scale(1.3); animation: popFruit 0.5s ease-out; }  /* Panen */
+
+        @keyframes popFruit {
+            0% { transform: scale(0.5); }
+            80% { transform: scale(1.4); }
+            100% { transform: scale(1.3); }
+        }
+
+        .badge-status { font-size: 0.85rem; background: rgba(0,0,0,0.75); padding: 4px 10px; border-radius: 15px; margin-top: 4px; font-weight: bold; text-align: center; z-index: 2; }
+
+        @keyframes shakePest {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.25) rotate(15deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* HAMA BERADA DI LUAR PETAK (PINGGIR KANAN ATAS) */
+        .pest-badge {
+            position: absolute; 
+            top: -12px; 
+            right: -12px;
+            background: #ff1744; 
+            border: 3px solid #ffffff; 
+            border-radius: 50%;
+            width: 48px; 
+            height: 48px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1.8rem; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            animation: shakePest 0.6s infinite; 
+            z-index: 20; 
+            cursor: pointer;
+        }
+
+        /* --- EFEK HUJAN PADA PETAK --- */
+        .rain-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            overflow: hidden;
+            border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;
+        }
+
+        .drop {
+            position: absolute;
+            background: linear-gradient(transparent, #80d8ff);
+            width: 3px;
+            height: 25px;
+            opacity: 0.8;
+            animation: fall 0.4s linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-30px); opacity: 1; }
+            100% { transform: translateY(160px); opacity: 0.2; }
+        }
+
+        /* --- NOTIFIKASI PANEN (POP-UP HARVEST) --- */
+        .harvest-toast {
+            position: fixed;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: #4caf50;
+            color: white;
+            border: 4px solid #ffffff;
+            border-radius: 20px;
+            padding: 20px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .harvest-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .harvest-toast h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.6rem;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .harvest-toast div {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* --- CONTAINER MENU IKON DI BAWAH --- */
+        .bottom-actions {
+            position: fixed; bottom: 20px; right: 20px; z-index: 20;
+            display: flex; gap: 12px; align-items: center;
+        }
+
+        .action-btn {
+            background: #ff9800; color: white; border: 3px solid white;
+            border-radius: 50px; padding: 12px 22px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 6px 0 #e65100, 0 10px 15px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background 0.2s;
+            display: flex; align-items: center; gap: 6px;
+            touch-action: none;
+        }
+
+        .action-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #e65100; }
+
+        .action-btn.water-btn {
+            background: #2196F3; box-shadow: 0 6px 0 #0D47A1, 0 10px 15px rgba(0,0,0,0.3);
+            cursor: grab;
+        }
+        .action-btn.water-btn:active { cursor: grabbing; }
+
+        .action-btn.audio-btn {
+            background: #e91e63; box-shadow: 0 6px 0 #880e4f, 0 10px 15px rgba(0,0,0,0.3);
+            padding: 12px 16px;
+        }
+
+        /* --- PANEL POPUP TOKO BENIH --- */
+        .shop-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 30;
+            display: none; justify-content: center; align-items: center;
+        }
+
+        .shop-content {
+            background: #fff8e1; border: 4px solid #5d4037; border-radius: 20px;
+            width: 90%; max-width: 600px; max-height: 80vh; padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow-y: auto;
+            position: relative;
+        }
+
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .close-btn { background: #f44336; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; font-weight: bold; cursor: pointer; }
+
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+        .crop-card { background: white; border: 2px solid #d7ccc8; border-radius: 12px; padding: 10px; text-align: center; }
+        .crop-card.selected { border: 3px solid #4caf50; background: #e8f5e9; }
+
+        .btn { border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-buy { background: #4caf50; color: white; }
+        .btn-sell { background: #ff9800; color: white; }
+        .btn-expand { background: #9c27b0; color: white; font-size: 1rem; }
+        .btn:disabled { background: #ccc !important; cursor: not-allowed; }
+        .btn-group { display: flex; gap: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- Awan Bergerak -->
+    <div class="sky">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="top-bar">
+        <h3 style="margin:0; color:#3e2723; font-size: 1.4rem;">🌾 Kebun Sawah Ajaib</h3>
+        <div class="stats">
+            <div>💰 Koin: <span id="coin-txt">20</span></div>
+            <div>🎒 Panen: <span id="inv-txt">0</span></div>
+        </div>
+    </div>
+
+    <!-- Lahan Pertanian Sawah -->
+    <div class="farm-field" id="farm-field"></div>
+
+    <!-- Notifikasi Selamat Panen -->
+    <div class="harvest-toast" id="harvest-toast">
+        <h2>🎉 Selamat Anda telah panen! 🎉</h2>
+        <div id="harvest-item-txt">Mendapatkan 1x Hasil Panen</div>
+    </div>
+
+    <!-- Tombol Aksi di Kanan Bawah -->
+    <div class="bottom-actions">
+        <button id="btn-audio" class="action-btn audio-btn" onclick="toggleAudio()">🔊 Musik On</button>
+        
+        <button id="btn-water" class="action-btn water-btn" 
+                draggable="true" 
+                ondragstart="handleWaterDragStart(event)">
+            🚿 Air
+        </button>
+
+        <button id="btn-open-shop" class="action-btn" onclick="toggleShop(true)">🏪 Toko Benih</button>
+    </div>
+
+    <!-- Modal Toko (Pop-up) -->
+    <div class="shop-modal" id="shop-modal">
+        <div class="shop-content">
+            <div class="shop-header">
+                <h3 style="margin:0; color:#3e2723;">🏪 Beli Benih & Jual Hasil</h3>
+                <button class="close-btn" onclick="toggleShop(false)">X</button>
+            </div>
+            <div id="selected-info" style="margin-bottom:10px; color:#2e7d32; font-weight:bold;"></div>
+            <div class="items-grid" id="items-grid"></div>
+        </div>
+    </div>
+
+<script>
+    // Web Audio API
+    let audioCtx = null;
+    let audioEnabled = true;
+    let bgmInterval = null;
+    let bgmStep = 0;
+
+    const melody = [
+        261.63, 329.63, 392.00, 523.25,
+        349.23, 440.00, 523.25, 698.46,
+        392.00, 493.88, 587.33, 783.99,
+        261.63, 329.63, 392.00, 523.25
+    ];
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            startBGM();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    window.addEventListener('touchstart', initAudio, { once: true });
+    window.addEventListener('click', initAudio, { once: true });
+
+    function startBGM() {
+        if (bgmInterval) return;
+        bgmInterval = setInterval(() => {
+            if (!audioEnabled || !audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            const freq = melody[bgmStep % melody.length];
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.03, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+            osc.start(now);
+            osc.stop(now + 0.4);
+
+            bgmStep++;
+        }, 500);
+    }
+
+    function toggleAudio() {
+        initAudio();
+        audioEnabled = !audioEnabled;
+        const btn = document.getElementById('btn-audio');
+        btn.innerText = audioEnabled ? '🔊 Musik On' : '🔇 Mute';
+        btn.style.background = audioEnabled ? '#e91e63' : '#757575';
+    }
+
+    function playSound(type) {
+        if (!audioEnabled) return;
+        initAudio();
+        if (!audioCtx) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'plant') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'water') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.linearRampToValueAtTime(250, now + 0.2);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now);
+            osc.stop(now + 0.2);
+        } else if (type === 'pest') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.linearRampToValueAtTime(80, now + 0.12);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } else if (type === 'coin') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(987.77, now);
+            osc.frequency.setValueAtTime(1318.51, now + 0.08);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+            osc.start(now);
+            osc.stop(now + 0.25);
+        } else if (type === 'expand') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(350, now);
+            osc.frequency.setValueAtTime(450, now + 0.08);
+            osc.frequency.setValueAtTime(550, now + 0.16);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+            osc.start(now);
+            osc.stop(now + 0.28);
+        }
+    }
+
+    const crops = {
+        tomat:    { name: 'Tomat', emoji: '🍅', timePerStage: 3, buy: 10, sell: 15 },
+        cabai:    { name: 'Cabai', emoji: '🌶️', timePerStage: 4, buy: 20, sell: 32 },
+        jagung:   { name: 'Jagung', emoji: '🌽', timePerStage: 5, buy: 35, sell: 55 },
+        padi:     { name: 'Padi', emoji: '🌾', timePerStage: 6, buy: 50, sell: 85 },
+        melon:    { name: 'Melon', emoji: '🍈', timePerStage: 8, buy: 80, sell: 140 },
+        semangka: { name: 'Semangka', emoji: '🍉', timePerStage: 10, buy: 120, sell: 220 },
+        kelapa:   { name: 'Kelapa', emoji: '🥥', timePerStage: 12, buy: 200, sell: 400 }
+    };
+
+    // Visual Pertumbuhan Berdasarkan Tahap (0: Biji, 1: Tunas/Daun, 2: Tanaman Besar, 3: Panen)
+    const stageSprites = ['🌰', '🌱', '🌿'];
+
+    const expandCosts = [10, 20, 30, 40, 50, 60, 70, 85, 100, 120];
+
+    let gameState = {
+        coins: 20,
+        unlockedPlots: 1,
+        selectedCrop: null,
+        inventory: { tomat: 0, cabai: 0, jagung: 0, padi: 0, melon: 0, semangka: 0, kelapa: 0 },
+        plots: Array(10).fill(null).map(() => ({ 
+            crop: null, 
+            stage: 0, // 0: Biji, 1: Tunas, 2: Besar, 3: Panen
+            timer: 0, 
+            watered: false, 
+            pest: null, 
+            interval: null,
+            isRaining: false 
+        }))
+    };
+
+    function toggleShop(open) {
+        document.getElementById('shop-modal').style.display = open ? 'flex' : 'none';
+    }
+
+    /* --- DRAG & DROP DESKTOP & TOUCH MOBILE --- */
+    function handleWaterDragStart(e) {
+        e.dataTransfer.setData('action', 'water');
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    function handleDragEnter(e, index) {
+        e.preventDefault();
+        const plot = gameState.plots[index];
+        if (plot.crop && !plot.watered && plot.stage < 3) {
+            e.currentTarget.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e, index) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const action = e.dataTransfer.getData('action');
+
+        if (action === 'water') {
+            const plot = gameState.plots[index];
+            if (plot.crop && !plot.watered && plot.stage < 3) {
+                waterCrop(index);
+            }
+        }
+    }
+
+    // Dukungan Touch Screen (HP/Tablet)
+    const waterBtn = document.getElementById('btn-water');
+    let activeHoverPlot = null;
+
+    waterBtn.addEventListener('touchstart', (e) => {
+        initAudio();
+    }, { passive: true });
+
+    waterBtn.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        document.querySelectorAll('.plot-earth').forEach(el => el.classList.remove('drag-over'));
+        activeHoverPlot = null;
+
+        if (targetEl) {
+            const plotEl = targetEl.closest('.plot-earth');
+            if (plotEl && plotEl.dataset.index !== undefined) {
+                const idx = parseInt(plotEl.dataset.index);
+                const plot = gameState.plots[idx];
+                if (plot.crop && !plot.watered && plot.stage < 3) {
+                    plotEl.classList.add('drag-over');
+                    activeHoverPlot = idx;
+                }
+            }
+        }
+    }, { passive: true });
+
+    waterBtn.addEventListener('touchend', () => {
+        document.querySelectorAll('.plot-earth').forEach(el => el.classList.remove('drag-over'));
+        if (activeHoverPlot !== null) {
+            waterCrop(activeHoverPlot);
+            activeHoverPlot = null;
+        }
+    });
+
+    function updateUI() {
+        document.getElementById('coin-txt').innerText = gameState.coins;
+        let totalInv = Object.values(gameState.inventory).reduce((a, b) => a + b, 0);
+        document.getElementById('inv-txt').innerText = totalInv;
+
+        if (gameState.selectedCrop) {
+            document.getElementById('selected-info').innerText = "Benih dipilih: " + crops[gameState.selectedCrop].name + " (Tutup toko & klik lahan kosong)";
+        }
+
+        renderField();
+        renderShop();
+    }
+
+    function renderField() {
+        const farm = document.getElementById('farm-field');
+        farm.innerHTML = '';
+
+        for (let i = 0; i < 10; i++) {
+            const plotEl = document.createElement('div');
+            plotEl.className = 'plot-earth';
+            plotEl.dataset.index = i;
+
+            if (i >= gameState.unlockedPlots) {
+                plotEl.classList.add('locked');
+                const cost = expandCosts[i];
+                plotEl.innerHTML = `
+                    <div style="font-size:2.2rem; margin-bottom:8px;">🔒</div>
+                    <button class="btn btn-expand" ${gameState.coins < cost ? 'disabled' : ''} onclick="expandPlot(${i}, ${cost})">💰 ${cost}</button>
+                `;
+            } else {
+                const plot = gameState.plots[i];
+                let contentHTML = '';
+
+                plotEl.ondragover = handleDragOver;
+                plotEl.ondragenter = (e) => handleDragEnter(e, i);
+                plotEl.ondragleave = handleDragLeave;
+                plotEl.ondrop = (e) => handleDrop(e, i);
+
+                // Efek Hujan
+                if (plot.isRaining) {
+                    contentHTML += `
+                        <div class="rain-container">
+                            <div class="drop" style="left: 20%; animation-delay: 0s;"></div>
+                            <div class="drop" style="left: 40%; animation-delay: 0.1s;"></div>
+                            <div class="drop" style="left: 60%; animation-delay: 0.2s;"></div>
+                            <div class="drop" style="left: 80%; animation-delay: 0.05s;"></div>
+                        </div>
+                    `;
+                }
+
+                // Hama (Berada di luar petak di pinggir kanan atas)
+                if (plot.pest) {
+                    contentHTML += `<div class="pest-badge" onclick="clearPest(event, ${i})">${plot.pest === 'tikus' ? '🐭' : '🐛'}</div>`;
+                }
+
+                // Status Pertumbuhan Petak
+                if (!plot.crop) {
+                    contentHTML += `<div class="badge-status">Kosong</div>`;
+                    plotEl.onclick = () => handlePlotClick(i);
+                } else if (plot.stage < 3) {
+                    // Tahap Pertumbuhan (0: Biji, 1: Tunas, 2: Tumbuhan)
+                    const currentSprite = stageSprites[plot.stage];
+                    
+                    if (!plot.watered) {
+                        const nextStageTxt = plot.stage === 0 ? 'Siram Biji 💧' : plot.stage === 1 ? 'Siram Tunas 💧' : 'Siram Pohon 💧';
+                        contentHTML += `
+                            <div class="plant-sprite stage-${plot.stage}">${currentSprite}</div>
+                            <div class="badge-status" style="background:#2196F3">${nextStageTxt}</div>
+                        `;
+                    } else {
+                        contentHTML += `
+                            <div class="plant-sprite stage-${plot.stage}">${currentSprite}</div>
+                            <div class="badge-status" style="background:#ff9800">Tumbuh (${plot.timer}s)</div>
+                        `;
+                    }
+                } else {
+                    // Tahap 3: Siap Panen
+                    contentHTML += `
+                        <div class="plant-sprite stage-3">${crops[plot.crop].emoji}</div>
+                        <div class="badge-status" style="background:#4CAF50">Panen!</div>
+                    `;
+                    plotEl.onclick = () => handlePlotClick(i);
+                }
+
+                plotEl.innerHTML = contentHTML;
+            }
+            farm.appendChild(plotEl);
+        }
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('items-grid');
+        grid.innerHTML = '';
+
+        for (let key in crops) {
+            const crop = crops[key];
+            const card = document.createElement('div');
+            card.className = `crop-card ${gameState.selectedCrop === key ? 'selected' : ''}`;
+            
+            card.innerHTML = `
+                <div style="font-size: 2.2rem;">${crop.emoji}</div>
+                <strong>${crop.name}</strong><br>
+                <small style="color:#666">3x Siram (${crop.timePerStage * 3}s Total)</small>
+                <div class="btn-group">
+                    <button class="btn btn-buy" ${gameState.coins < crop.buy ? 'disabled' : ''} onclick="selectCrop('${key}')">
+                        Beli 💰${crop.buy}
+                    </button>
+                    <button class="btn btn-sell" ${gameState.inventory[key] <= 0 ? 'disabled' : ''} onclick="sellHarvest('${key}')">
+                        Jual (${gameState.inventory[key]})
+                    </button>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
+    function selectCrop(cropKey) {
+        playSound('plant');
+        gameState.selectedCrop = cropKey;
+        updateUI();
+        toggleShop(false);
+    }
+
+    function handlePlotClick(index) {
+        const plot = gameState.plots[index];
+
+        if (plot.stage === 3) {
+            harvestCrop(index);
+            return;
+        }
+
+        if (!plot.crop) {
+            if (!gameState.selectedCrop) {
+                alert("Pilih benih di Toko Benih dulu!");
+                return;
+            }
+            plantSeed(index);
+        }
+    }
+
+    function plantSeed(index) {
+        const cropKey = gameState.selectedCrop;
+        const crop = crops[cropKey];
+
+        if (gameState.coins < crop.buy) {
+            alert("Koin tidak cukup!");
+            return;
+        }
+
+        playSound('plant');
+        gameState.coins -= crop.buy;
+        const plot = gameState.plots[index];
+        plot.crop = cropKey;
+        plot.stage = 0; // Tahap Biji
+        plot.timer = crop.timePerStage;
+        plot.watered = false;
+        plot.pest = null;
+        plot.isRaining = false;
+
+        updateUI();
+    }
+
+    function triggerRainEffect(index) {
+        const plot = gameState.plots[index];
+        plot.isRaining = true;
+        updateUI();
+        setTimeout(() => {
+            plot.isRaining = false;
+            updateUI();
+        }, 1200);
+    }
+
+    function waterCrop(index) {
+        playSound('water');
+        triggerRainEffect(index);
+
+        const plot = gameState.plots[index];
+        const crop = crops[plot.crop];
+
+        plot.watered = true;
+        plot.timer = crop.timePerStage;
+
+        if (plot.interval) clearInterval(plot.interval);
+
+        plot.interval = setInterval(() => {
+            // Peluang Muncul Hama
+            if (!plot.pest && Math.random() < 0.15 && plot.timer > 1) {
+                plot.pest = Math.random() > 0.5 ? 'tikus' : 'ulat';
+                updateUI();
+                return;
+            }
+
+            if (!plot.pest) {
+                plot.timer--;
+                if (plot.timer <= 0) {
+                    clearInterval(plot.interval);
+                    plot.stage++; // Naik ke Tahap Berikutnya
+                    plot.watered = false;
+                }
+                updateUI();
+            }
+        }, 1000);
+
+        updateUI();
+    }
+
+    function clearPest(event, index) {
+        event.stopPropagation();
+        playSound('pest');
+        const plot = gameState.plots[index];
+        plot.pest = null;
+        updateUI();
+    }
+
+    let toastTimeout = null;
+    function showHarvestToast(cropName, emoji) {
+        const toast = document.getElementById('harvest-toast');
+        const itemTxt = document.getElementById('harvest-item-txt');
+        
+        itemTxt.innerText = `Mendapatkan 1x ${cropName} ${emoji}`;
+        toast.classList.add('show');
+
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000);
+    }
+
+    function harvestCrop(index) {
+        playSound('coin');
+        const plot = gameState.plots[index];
+        const harvestedCrop = crops[plot.crop];
+
+        gameState.inventory[plot.crop]++;
+        
+        // Tampilkan pesan selamat panen
+        showHarvestToast(harvestedCrop.name, harvestedCrop.emoji);
+
+        plot.crop = null;
+        plot.stage = 0;
+        plot.watered = false;
+        plot.pest = null;
+        plot.isRaining = false;
+        if (plot.interval) clearInterval(plot.interval);
+        
+        updateUI();
+    }
+
+    function sellHarvest(cropKey) {
+        if (gameState.inventory[cropKey] > 0) {
+            playSound('coin');
+            gameState.inventory[cropKey]--;
+            gameState.coins += crops[cropKey].sell;
+            updateUI();
+        }
+    }
+
+    function expandPlot(index, cost) {
+        if (gameState.coins >= cost) {
+            playSound('expand');
+            gameState.coins -= cost;
+            gameState.unlockedPlots++;
+            updateUI();
+        }
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
